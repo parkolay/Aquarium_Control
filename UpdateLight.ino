@@ -4,6 +4,10 @@ void UpdateLight()
 
 //  if (Button_1Value == LOW)  //this will compare the int var above to a value (HIGH)
 //  {                           //if you push the button the cycle will start all over again
+  if (DebugOn == true)
+  {  
+    Serial.println("Made it here to the top of UpdateLight. ");
+  }
 
     while(PixelCycles > 0)    //we want to do something a bunch of times or while some condition is "right"
     {
