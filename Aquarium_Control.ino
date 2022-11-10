@@ -1,67 +1,53 @@
-/*
-*/
-/*  This sketch sets up a small OLED display and pulls analog signals from two sensors 
- * (HTM1735LF (RH && Temp) && MQ135(air quality --> SnO2 detects CO2 && VOC))
- * 
- *  Requirements:
- *
- *  * Nano or other Arduino board
- *  * Library: U8g2lib.h --> u8g2 by oliver was used
- *  * Library: RTClib.h -->  DS3231 RTC was used
- *
- * 
- * 
+/* Neo_Pix_Cycle
+//Anya's Nightlight --> using code from varioius sources listed below;
+// Button Cycler example for the rainbow animations
+//NeoPixel Ring simple sketch (c) 2013 Shae Erisson
+// released under the GPLv3 license to match the rest of the AdaFruit NeoPixel library
+
  *  // Pinout
- *  //  BUTTON              --> PIN D03 (INT1) 
+ *  //  Interrupt           --> PIN D02 with INT0
+ *  //  BUTTON              --> PIN D03 (INT1)
  *  //  NEO_PIXEL(WS2812B)  --> PIN D04
- *  //  MQ135 analog Output --> A00
- *  //  RH Analog Output    --> A01
- *  //  Temp Analog Output  --> A02 Tied HIGH W/ 10k Ohm resistor 
- *  //  SCL                 --> A04
- *  //  SDA                 --> A05
- *   
+ *  //  SCL                 --> A04 Tied HIGH W/ 3k3 Ohm resistor
+ *  //  SDA                 --> A05 Tied HIGH W/ 3k3 Ohm resistor
 */
-
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_NeoPixel.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-#include <U8g2lib.h>
+
+#include "Wire.h"
+#include "U8g2lib.h"
 #include "RTClib.h"
+#include "SparkFunBME280.h"
+#include "Adafruit_NeoPixel.h"
+#include "SolarCalculator.h"
 
+// Which pin on the Arduino is connected to the NeoPixels?
+#define NEO_PIN 4
 
-//#ifdef U8X8_HAVE_HW_I2C
-//#include <Wire.h>
-//#endif
-
-#define SEALEVELPRESSURE_KPA (101.325)
-#define SEALEVELPRESSURE_HPA (1013.25)
-
-// Which pin is connected to the NeoPixels?
-#define PIN 4
 //Add a button as an input
 #define BUTTON_1  3
-// How many NeoPixels are attached?
-#define NUMPIXELS 8
 
-bool DebugOn = false; //set to true for debug serial messages
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS 8
 
 int PixelCycles = 6;  //set a number of cycles before turning OFF pixels
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
 // example for more information on possible values.
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEO_PIN, NEO_GRB + NEO_KHZ800);
 
+//Initialize BME280
+BME280 bme280;
+
+//Initialize SSD1306 Display
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
-Adafruit_BME280 bme280;// I2C
+//Initialize RTC
+DS3231 rtc;
 
-DS3231 rtc;       //DS3231 rtc support;
-
-
-unsigned long delayTime;
+int DSTSwitch_mode = 1;
+int DelayPeriod = 10;           //setup for using millis() instead of delay()
+unsigned long Current_Time = 0; //the "other part" of millis() (roll over around 50 days which might not work in this application)
 
 int seconds = 0;  // varible to store the seconds from clock
 int minutes = 0;  // varible to store the minutes from clock
@@ -70,64 +56,54 @@ int days    = 0;  // varible to store the seconds from clock
 int months  = 0;  // varible to store the minutes from clock
 int years   = 0;  // varible to store the hours from clock
 
+// Location
+double transit, sunrise, sunset;
+double latitude = 39.7565;
+double longitude = -77.966;
+double HoursOLight = 0;
+int utc_offset = -5;
 
-void setup(void) 
+int SunRiseHour = 0;
+int SunRiseMinute = 0;
+int SunSetHour = 0;
+int SunSetMinute = 0;
+
+bool DebugOn = false; //set to true for debug serial messages
+
+void setup()    //This code is only ran at the very beginning of startup
 {
-  Serial.begin(115200);
-  Serial.println("Initializing Aquarium Controller 11/07/2022...");
-
-  pixels.begin(); // This initializes the NeoPixel library.
-  pinMode(BUTTON_1, INPUT_PULLUP);   // initialize the button pin as an input:
-      
-// unsigned status;
-    
-//     // default settings
-//     // (you can also pass in a Wire library object like &Wire2)
-//     status = bme280.begin();  
-//     if (!status) 
-//     {
-//         Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-//         Serial.print("SensorID was: 0x"); Serial.println(bme280.sensorID(),16);
-//         Serial.print("   ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-//         Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-//         Serial.print("   ID of 0x60 represents a BME 280.\n");
-//         Serial.print("   ID of 0x61 represents a BME 680.\n");
-//         while (1);
-//     }
+  
+  
+  Serial.begin(57600);
+  Serial.println("Initializing Neo_Pix_Cycle 11//2022...");
+  Serial.println("Initializing WS2812b...");
+  SetupNeoPix();
+  SetupRTC();
   
   u8g2.begin();
-  u8g2.clearDisplay();
+  Serial.println("SD1306 has begun...");
     // connect AREF to 3.3V and use that as VCC, less noisy!  
     //thank you for the tip Lady Ada
   analogReference(EXTERNAL);  
 
-  rtc.begin();          //start the clock
-//This will need to be commented out to run other code
-//If NOT, the clock will rest to the compile time every time it is powered ON
-//rtc.adjust(DateTime(__DATE__, __TIME__)); // force the adjust if the cock is already running
+  SetupBME280();
+  pinMode(BUTTON_1, INPUT_PULLUP);   // initialize the button pin as an input:
+                                     //set as INPUT_PULLUP for condition where there is no switch present
+				     // use soft pull down with switch
 }
 
-void loop(void) 
+void loop() 
 {
-  if (DebugOn == true)
-  {  
-    Serial.println("Made it here to the top of loop. ");
+  int Button_1Value = digitalRead(BUTTON_1);    //set up an int var and set it to the value read on BUTTON_1
+
+  if (Button_1Value == HIGH)  //this will compare the int var above to a value (HIGH) 
+  {                           //if you push the button the cycle will start all over again
+    UpdateNeo_Pix();
+  }//end if (Button_1Value == HIGH)
+  else 
+  {
+            //I got nothing
   }
+}//end void loop() 
 
 
-  // UpdateMQ135();
-  // UpdateBME280();
-  // UpdateTime();
-  UpdateLight();
-
-
-  // delay(100);
-  // u8g2.firstPage();
-  // do 
-  // {
-
-  //   UpdateDisplay();
-  // } 
-  // while ( u8g2.nextPage() );
-  // //delay(1000);
-}
