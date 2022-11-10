@@ -1,4 +1,4 @@
-/* Neo_Pix_Cycle
+/* Aquarium_Control
 //Anya's Nightlight --> using code from varioius sources listed below;
 // Button Cycler example for the rainbow animations
 //NeoPixel Ring simple sketch (c) 2013 Shae Erisson
