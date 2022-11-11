@@ -11,12 +11,20 @@ void UpdateNeo_Pix()
         rainbow(100);           //here we are calling a function to run (look for it below)
         //rainbowCycle(100);      //another function call
         --PixelCycles;          //this is a decrement, which means we take the var and subtract '1' from it's value
+        if (PixelCycles > 0)
+        {
+          Serial.print("Only ");
+        }
+        Serial.print(PixelCycles);
+        Serial.println(" Pixels Cycles to go ");
       }
     
       if (PixelCycles <= 0) //check to see if we should turn off pixels
       {
-        TurnOFFPixels();    //turn off pixels
-        PixelCycles = 6;    //reset the count down 
+        //TurnOFFPixels();    //turn off pixels or comment out if you want it to keep going
+        PixelCycles = 6;    //reset the count down to keep going or comment out if you want it to stop
+        Serial.print("PixelCycles Rest to ");
+        Serial.println(PixelCycles);
       }
 
 }//end UpdateNeo_Pix()

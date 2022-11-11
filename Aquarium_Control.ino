@@ -11,7 +11,7 @@
  *  //  SCL                 --> A04 Tied HIGH W/ 3k3 Ohm resistor
  *  //  SDA                 --> A05 Tied HIGH W/ 3k3 Ohm resistor
 */
-#include <Arduino.h>
+#include "Arduino.h"
 
 #include "Wire.h"
 #include "U8g2lib.h"
@@ -29,7 +29,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS 8
 
-int PixelCycles = 6;  //set a number of cycles before turning OFF pixels
+int PixelCycles = 6;  //set a number of cycles before turning OFF pixels 1 cycle ~= 150 sec
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
@@ -68,17 +68,18 @@ int SunRiseMinute = 0;
 int SunSetHour = 0;
 int SunSetMinute = 0;
 
-bool DebugOn = false; //set to true for debug serial messages
+bool DebugOn = true; //set to true for debug serial messages
 
 void setup()    //This code is only ran at the very beginning of startup
 {
   
   
   Serial.begin(57600);
+  Wire.begin();
   Serial.println("Initializing Neo_Pix_Cycle 11//2022...");
   Serial.println("Initializing WS2812b...");
   SetupNeoPix();
-  SetupRTC();
+  SetupRTC();   //this will need to be commented out if not connected 
   
   u8g2.begin();
   Serial.println("SD1306 has begun...");
@@ -98,7 +99,17 @@ void loop()
 
   if (Button_1Value == HIGH)  //this will compare the int var above to a value (HIGH) 
   {                           //if you push the button the cycle will start all over again
+    UpdateTime();
+
+    u8g2.firstPage();
+      //delay(100); //there is already enough going on 
+      do 
+      {
+        UpdateDisplay();  //this will jump to update the display
+      } 
+      while ( u8g2.nextPage() );
     UpdateNeo_Pix();
+    
   }//end if (Button_1Value == HIGH)
   else 
   {

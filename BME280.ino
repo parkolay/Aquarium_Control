@@ -21,7 +21,7 @@ void SetupBME280()
   bme280.setI2CAddress(0x76); //Connect to a second sensor
   if (bme280.beginI2C() == false) 
     {
-      Serial.println("Sensor connect failed");
+      Serial.println("BME280 Sensor connect failed");
     }
 
     // unsigned status;
@@ -39,7 +39,10 @@ void SetupBME280()
 //         Serial.print("   ID of 0x61 represents a BME 680.\n");
 //         while (1);
 //     }
-  Serial.println("BME280 has begun...");
+  if (bme280.beginI2C() == true) 
+  {
+    Serial.println("BME280 has begun...");
+  }  
 }
 
 void UpdateBME280 ()

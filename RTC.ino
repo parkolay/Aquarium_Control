@@ -1,17 +1,41 @@
+/*
+ * UpdateTime - Reads the RTC and set multiple varibles for use in other parts of the code
+ *  pinout +5V-SDA-SCL-N/C-GND I think the N/C is an alarm pin...?
+ * 
+ * DAP - 09-17-2021 Initial rev
+ * DAP - 09-28-2021 added more vars 
+ * DAP - 11-11-2022 updated setupRTC() 
+ * DAP - 11-11-2022 Added DST SW and SunRise/SunSet
+ */
+
+ 
+
+
+
 void SetupRTC()
 {
   //initialize RTC
   rtc.begin();
-      //rtc.adjust(DateTime(__DATE__, __TIME__));   //--> this is to force the time is it is set to something already
-    if (! rtc.isrunning()) 
-    {
-      Serial.println("RTC is NOT running!");
-      // following line sets the RTC to the date & time this sketch was compiled
-      rtc.adjust(DateTime(__DATE__, __TIME__));
-      
-    }
+ 
+  if (! rtc.isrunning()) //if RTC is not running try to set it 
+  {
+    char t[32];
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+    DateTime now = rtc.now();
+    sprintf(t, "%02d:%02d:%02d %02d/%02d/%02d",  now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year());  
+    Serial.print(F("Date/Time: "));
+    Serial.println(t);
+  }
 
-  Serial.println("RTC has begun");
+  if (rtc.isrunning())  //if RTC is running, send out time
+  {
+    Serial.println("RTC has begun");
+    UpdateRTC();
+    GetSunriseSunset();
+  }
+  
 }
 
 void UpdateRTC()
