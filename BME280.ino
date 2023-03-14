@@ -119,7 +119,7 @@ void UpdateSerialBME280 ()
     Serial.print(bme280.dewPointC(), 2);
     Serial.println(" *C");
     Serial.print(" Dewpoint: ");
-    Serial.print(BME280_DewPoint);
+    Serial.print(BME280_DewPoint, 2);
     Serial.println(" *f");
 
     BME280_Altitude = bme280.readFloatAltitudeMeters();

@@ -8,10 +8,6 @@
  * DAP - 11-11-2022 Added DST SW and SunRise/SunSet
  */
 
- 
-
-
-
 void SetupRTC()
 {
   //initialize RTC

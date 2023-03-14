@@ -76,7 +76,7 @@ void setup()    //This code is only ran at the very beginning of startup
   
   Serial.begin(57600);
   Wire.begin();
-  Serial.println("Initializing Neo_Pix_Cycle 11//2022...");
+  Serial.println("Initializing Aquarium Control 11//2022...");
   Serial.println("Initializing WS2812b...");
   SetupNeoPix();
   SetupRTC();   //this will need to be commented out if not connected 
